@@ -143,6 +143,19 @@
   #btn-mic.listening { background: var(--red); box-shadow: 0 4px 18px rgba(255,59,48,0.4); font-size: 22px; }
   #btn-mic.disabled { background: var(--gray); box-shadow: none; }
   #bottom-hint { font-size: 11px; color: var(--dim); }
+  #lang-switcher {
+    display: flex; background: #E5E5EA; border-radius: 10px; padding: 2px; gap: 2px;
+  }
+  .lang-btn {
+    border: none; background: transparent; border-radius: 8px;
+    padding: 6px 18px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit; color: var(--subtext);
+    transition: all 0.18s;
+  }
+  .lang-btn.active {
+    background: #fff; color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  }
 
   /* SETTINGS OVERLAY */
   #overlay {
@@ -231,6 +244,10 @@
 
 <!-- BOTTOM -->
 <div id="bottom">
+  <div id="lang-switcher">
+    <button class="lang-btn active" id="lang-ru" onclick="setLang('ru-RU')">RU</button>
+    <button class="lang-btn" id="lang-en" onclick="setLang('en-US')">EN</button>
+  </div>
   <div id="bottom-status">Откройте ⚙️ для доступа к микрофону</div>
   <button id="btn-mic" class="disabled" onclick="micButtonTap()">🎙️</button>
   <div id="bottom-hint">Анализ локально · ФАП-414</div>
@@ -380,7 +397,7 @@ function startListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { alert("Браузер не поддерживает распознавание речи"); return; }
   const r = new SR();
-  r.continuous = true; r.interimResults = true; r.lang = "ru-RU";
+  r.continuous = true; r.interimResults = true; r.lang = currentLang;
   r.onstart = () => { isListening = true; updateBottomUI(); };
   r.onresult = (e) => {
     let interim = "", final = "";
@@ -598,6 +615,15 @@ function statusCfg(s) {
     noise:   { color:"var(--gray)", bg:"var(--gray-bg)", border:"var(--gray-border)", dot:"var(--dim)", label:"Шум" },
   };
   return m[s] || m.noise;
+}
+
+let currentLang = "ru-RU";
+
+function setLang(lang) {
+  currentLang = lang;
+  document.getElementById("lang-ru").className = "lang-btn" + (lang === "ru-RU" ? " active" : "");
+  document.getElementById("lang-en").className = "lang-btn" + (lang === "en-US" ? " active" : "");
+  if (isListening) { stopListening(); setTimeout(startListening, 150); }
 }
 
 // Check existing permission
