@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="АТС Фразеология">
+<meta name="theme-color" content="#ffffff">
+<title>АТС Фразеология</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #34C759; --green-bg: #F0FBF3; --green-border: #C6F0D0;
+    --yellow: #FF9500; --yellow-bg: #FFF8EE; --yellow-border: #FFE4B5;
+    --red: #FF3B30; --red-bg: #FFF5F5; --red-border: #FFCDD0;
+    --blue: #007AFF; --blue-bg: #F0F6FF; --blue-border: #C5DCFF;
+    --gray: #8E8E93; --gray-bg: #F9F9F9; --gray-border: #E5E5EA;
+    --bg: #F2F2F7; --card: #ffffff;
+    --text: #000000; --subtext: #8E8E93; --dim: #C7C7CC;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overscroll-behavior: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Helvetica Neue', sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column;
+    max-width: 600px; margin: 0 auto;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  #nav {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid rgba(0,0,0,0.12);
+    padding: 14px 20px 12px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  #nav-top { display: flex; align-items: center; justify-content: space-between; }
+  #nav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
+  #nav-sub { font-size: 12px; color: var(--subtext); margin-top: 2px; }
+  #btn-reset { background: none; border: none; color: var(--blue); font-size: 15px; cursor: pointer; font-family: inherit; display: none; }
+  #btn-settings { background: none; border: none; font-size: 20px; cursor: pointer; padding: 0; line-height: 1; }
+
+  /* STATS */
+  #stats { display: none; margin-top: 12px; gap: 8px; }
+  #stats.visible { display: flex; }
+  .stat-card {
+    flex: 1; background: var(--bg); border-radius: 10px;
+    padding: 8px 10px; text-align: center;
+  }
+  .stat-val { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-lbl { font-size: 11px; color: var(--subtext); margin-top: 1px; }
+
+  /* FEED */
+  #feed {
+    flex: 1; padding: 12px 16px; padding-bottom: 160px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+  }
+
+  /* EMPTY */
+  #empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding-top: 60px; gap: 16px; text-align: center;
+  }
+  #empty-icon {
+    width: 76px; height: 76px; border-radius: 22px; background: var(--card);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+  }
+  #empty-title { font-size: 19px; font-weight: 600; letter-spacing: -0.4px; }
+  #empty-sub { font-size: 15px; color: var(--subtext); max-width: 280px; line-height: 1.55; }
+
+  /* ENTRY CARDS */
+  .entry {
+    background: var(--card); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 8px;
+    border: 1.5px solid transparent; transition: border-color 0.15s;
+    cursor: default;
+  }
+  .entry.has-detail { cursor: pointer; }
+  .entry-main { padding: 13px 16px; display: flex; align-items: flex-start; gap: 12px; }
+  .entry-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-phrase { font-size: 15px; line-height: 1.4; letter-spacing: -0.2px; }
+  .entry-summary { font-size: 13px; color: var(--subtext); margin-top: 3px; line-height: 1.4; }
+  .entry-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .entry-badge { font-size: 12px; font-weight: 500; padding: 3px 10px; border-radius: 20px; border: 1px solid; white-space: nowrap; }
+  .entry-time { font-size: 11px; color: var(--dim); }
+
+  /* DETAIL */
+  .entry-detail {
+    border-top: 0.5px solid var(--bg); padding: 12px 16px;
+    background: #FAFAFA; display: none; flex-direction: column; gap: 10px;
+  }
+  .entry-detail.open { display: flex; }
+  .issue-card { background: var(--card); border-radius: 12px; padding: 12px 14px; border: 1px solid; }
+  .issue-ref {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 6px; margin-bottom: 10px;
+  }
+  .issue-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .issue-row { display: flex; gap: 8px; align-items: flex-start; }
+  .issue-icon { font-size: 13px; font-weight: 700; min-width: 16px; }
+  .issue-text { font-size: 13px; padding: 3px 10px; border-radius: 8px; line-height: 1.4; }
+  .issue-expl { font-size: 13px; color: #3C3C43; line-height: 1.5; }
+
+  /* LIVE */
+  #live {
+    background: var(--card); border-radius: 14px; padding: 13px 16px;
+    display: none; align-items: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07); margin-bottom: 8px;
+  }
+  #live.visible { display: flex; }
+  #live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; animation: blink 1s ease-in-out infinite; }
+  #live-text { font-size: 15px; color: var(--subtext); }
+
+  /* BOTTOM BAR */
+  #bottom {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 600px;
+    background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 0.5px solid rgba(0,0,0,0.1);
+    padding: 16px 20px calc(20px + var(--safe-bottom));
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  #bottom-status { font-size: 13px; color: var(--subtext); min-height: 18px; }
+  #btn-mic {
+    width: 68px; height: 68px; border-radius: 50%; border: none;
+    background: var(--blue); color: white;
+    box-shadow: 0 4px 18px rgba(0,122,255,0.35);
+    cursor: pointer; font-size: 26px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    -webkit-appearance: none;
+  }
+  #btn-mic:active { transform: scale(0.94); }
+  #btn-mic.listening { background: var(--red); box-shadow: 0 4px 18px rgba(255,59,48,0.4); font-size: 22px; }
+  #btn-mic.disabled { background: var(--gray); box-shadow: none; }
+  #bottom-hint { font-size: 11px; color: var(--dim); }
+
+  /* SETTINGS OVERLAY */
+  #overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  #overlay.open { display: flex; }
+  #sheet {
+    width: 100%; max-width: 600px; background: var(--card);
+    border-radius: 20px 20px 0 0;
+    padding: 8px 0 calc(32px + var(--safe-bottom));
+    animation: slideUp 0.28s cubic-bezier(0.32,0.72,0,1);
+  }
+  #sheet-handle-wrap { display: flex; justify-content: center; padding: 8px 0 4px; }
+  #sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: #E5E5EA; }
+  #sheet-header { padding: 8px 20px 16px; border-bottom: 0.5px solid var(--bg); }
+  #sheet-title { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; }
+  #sheet-body { padding: 20px 20px 0; }
+  .section-label {
+    font-size: 13px; font-weight: 600; color: var(--subtext);
+    letter-spacing: 0.3px; margin-bottom: 12px; text-transform: uppercase;
+  }
+  #mic-status-card {
+    border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  #mic-status-icon { font-size: 24px; }
+  #mic-status-label { font-size: 15px; font-weight: 500; }
+  #mic-status-desc { font-size: 13px; color: var(--subtext); margin-top: 2px; }
+  .sheet-btn {
+    width: 100%; border: none; border-radius: 14px; padding: 14px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: inherit; margin-bottom: 10px; transition: opacity 0.15s;
+  }
+  .sheet-btn:active { opacity: 0.75; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border) !important; }
+  .btn-secondary { background: var(--bg); color: var(--text); font-weight: 500; }
+  #denied-info {
+    background: var(--red-bg); border: 1px solid var(--red-border);
+    border-radius: 14px; padding: 14px; margin-bottom: 10px; display: none;
+  }
+  #denied-info p { font-size: 13px; color: var(--red); line-height: 1.65; }
+  #sheet-divider { height: 1px; background: var(--bg); margin: 8px 0 16px; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  .entry { animation: fadeIn 0.2s ease-out; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div id="nav">
+  <div id="nav-top">
+    <div>
+      <div id="nav-title">Фразеология РТС</div>
+      <div id="nav-sub">ФАП-414 · ИКАО Doc 4444</div>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center">
+      <button id="btn-reset" onclick="clearAll()">Сбросить</button>
+      <button id="btn-settings" onclick="openSettings()">⚙️</button>
+    </div>
+  </div>
+  <div id="stats">
+    <div class="stat-card"><div class="stat-val" id="s-ok" style="color:var(--green)">0</div><div class="stat-lbl">Корректно</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-warn" style="color:var(--yellow)">0</div><div class="stat-lbl">Замечания</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-err" style="color:var(--red)">0</div><div class="stat-lbl">Ошибки</div></div>
+    <div class="stat-card" id="s-acc-card" style="display:none">
+      <div class="stat-val" id="s-acc">—</div><div class="stat-lbl">Точность</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEED -->
+<div id="feed">
+  <div id="empty">
+    <div id="empty-icon">🎙️</div>
+    <div id="empty-title">Готов к работе</div>
+    <div id="empty-sub">Откройте настройки ⚙️, разрешите микрофон и нажмите кнопку</div>
+  </div>
+  <div id="live"><div id="live-dot"></div><div id="live-text"></div></div>
+</div>
+
+<!-- BOTTOM -->
+<div id="bottom">
+  <div id="bottom-status">Откройте ⚙️ для доступа к микрофону</div>
+  <button id="btn-mic" class="disabled" onclick="micButtonTap()">🎙️</button>
+  <div id="bottom-hint">Анализ локально · ФАП-414</div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div id="overlay" onclick="overlayTap(event)">
+  <div id="sheet">
+    <div id="sheet-handle-wrap"><div id="sheet-handle"></div></div>
+    <div id="sheet-header"><div id="sheet-title">Настройки</div></div>
+    <div id="sheet-body">
+      <div class="section-label">Микрофон</div>
+      <div id="mic-status-card">
+        <span id="mic-status-icon">🎙️</span>
+        <div>
+          <div id="mic-status-label">Не запрошен</div>
+          <div id="mic-status-desc">Разрешение ещё не запрошено</div>
+        </div>
+      </div>
+      <button id="btn-allow" class="sheet-btn btn-primary" onclick="requestMic()">Разрешить доступ к микрофону</button>
+      <button id="btn-revoke" class="sheet-btn btn-danger" style="display:none" onclick="revokeMic()">Отключить микрофон</button>
+      <div id="denied-info">
+        <p><strong>Браузер заблокировал доступ.</strong><br><br>
+        <strong>Safari:</strong> Настройки → Safari → Микрофон → Разрешить для этого сайта<br><br>
+        <strong>Chrome:</strong> Нажмите 🔒 в адресной строке → Настройки сайта → Микрофон → Разрешить</p>
+      </div>
+      <div id="sheet-divider"></div>
+      <button class="sheet-btn btn-secondary" onclick="closeSettings()">Готово</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── ANALYSER ─────────────────────────────────────────────────────────────────
+const WRONG = [
+  { re: /\bпринял\b/i,        fix: "ПОНЯЛ",                ref: "п.21 ФАП-414 (ROGER)" },
+  { re: /\bдобро\b/i,         fix: "РАЗРЕШАЮ",             ref: "п.21 ФАП-414" },
+  { re: /\bразрешите\b/i,     fix: "ПРОШУ",                ref: "п.21 ФАП-414 (REQUEST)" },
+  { re: /\bпереходите\b/i,    fix: "РАБОТАЙТЕ С",          ref: "п.21 ФАП-414 (CONTACT)" },
+  { re: /\bвыходите на\b/i,   fix: "РАБОТАЙТЕ С",          ref: "п.21 ФАП-414 (CONTACT)" },
+  { re: /\bвас понял\b/i,     fix: "ПОНЯЛ",                ref: "п.21 ФАП-414 — лишнее «вас»" },
+  { re: /\bпонятно\b/i,       fix: "ПОНЯЛ",                ref: "п.21 ФАП-414 (ROGER)" },
+  { re: /\bясно\b/i,          fix: "ПОНЯЛ",                ref: "п.21 ФАП-414 (ROGER)" },
+  { re: /\bхорошо\b/i,        fix: "ПОНЯЛ / ВЫПОЛНЯЮ",     ref: "п.21 ФАП-414" },
+  { re: /\bокей\b/i,          fix: "ПОНЯЛ / ПОДТВЕРЖДАЮ",  ref: "п.21 ФАП-414" },
+  { re: /\bвсё понял\b/i,     fix: "ПОНЯЛ",                ref: "п.21 ФАП-414" },
+  { re: /\bподжидайте\b/i,    fix: "ЖДИТЕ",                ref: "п.21 ФАП-414 (STAND BY)" },
+  { re: /\bвзлёт разрешён\b/i, fix: "ВПП (номер) РАЗРЕШАЮ ВЗЛЁТ", ref: "п.38 ФАП-414" },
+  { re: /\bвзлет разрешен\b/i, fix: "ВПП (номер) РАЗРЕШАЮ ВЗЛЁТ", ref: "п.38 ФАП-414" },
+  { re: /\bпосадка разрешена\b/i, fix: "ВПП (номер) ПОСАДКУ РАЗРЕШАЮ", ref: "п.43 ФАП-414" },
+];
+
+const WARNINGS = [
+  { test: t => /разрешаю взлёт|cleared for take.?off/i.test(t) && !/впп \d|runway \d/i.test(t),
+    msg: "Нет номера ВПП перед разрешением на взлёт", fix: "ВПП 24 РАЗРЕШАЮ ВЗЛЁТ", ref: "п.38 ФАП-414" },
+  { test: t => /посадку разрешаю|cleared to land/i.test(t) && !/впп \d|runway \d/i.test(t),
+    msg: "Нет номера ВПП перед разрешением на посадку", fix: "ВПП 24 ПОСАДКУ РАЗРЕШАЮ", ref: "п.43 ФАП-414" },
+  { test: t => /работайте|contact/i.test(t) && !/\d{3}\.\d|\d{3,4}/.test(t),
+    msg: "Не указана частота при переходе на связь", fix: "РАБОТАЙТЕ С ПОДХОДОМ 120.5", ref: "п.28 ФАП-414" },
+  { test: t => /набирайте|снижайтесь|climb|descend/i.test(t) && !/(\d{3,5}|эшелон|fl\s*\d)/i.test(t),
+    msg: "Не указан эшелон или высота", fix: "НАБИРАЙТЕ ЭШЕЛОН 100", ref: "п.2 Типовой фразеологии" },
+  { test: t => /сквок|squawk/i.test(t) && !/\d{4}|ident|опознавание|charlie|standby|mayday/i.test(t),
+    msg: "СКВОК без кода или команды", fix: "СКВОК 2347 / SQUAWK IDENT", ref: "п.81–85 Типовой фразеологии" },
+];
+
+const OK_RE = [
+  /разрешаю взлёт/i, /разрешаю вылет/i, /посадку разрешаю/i,
+  /cleared (to land|for take.?off)/i,
+  /набирайте (эшелон|до|fl|\d)/i, /снижайтесь (до|эшелон|fl|\d)/i,
+  /выдерживайте (эшелон|высоту|fl|\d)/i,
+  /climb to/i, /descend to/i, /maintain/i,
+  /работайте с/i, /рулите до точки/i, /taxi to holding/i,
+  /пересекайте впп/i, /cross runway/i,
+  /ожидайте перед впп/i, /hold short/i,
+  /занимайте исполнительный/i, /line up/i,
+  /уходите на второй круг/i, /go around/i,
+  /сквок \d{4}/i, /squawk \d{4}/i,
+  /qnh \d{3,4}/i, /qfe \d{3,4}/i,
+  /информацию атис .+ имею/i, /information [a-z]/i,
+  /\bпонял\b/i, /\broger\b/i, /\bвыполняю\b/i, /\bwilco\b/i,
+  /\bждите\b/i, /stand by/i,
+  /оставайтесь на данной частоте/i, /remain this frequency/i,
+  /взлёт запрещаю/i, /cancel take.?off/i,
+  /оставайтесь на месте/i, /hold position/i,
+  /\bмейдей\b/i, /\bmayday\b/i, /\bпан.пан\b/i, /\bpan.pan\b/i,
+];
+
+function analyse(phrase) {
+  const t = phrase.trim();
+  if (t.length < 3) return { status:"noise", summary:"Слишком короткий фрагмент", issues:[] };
+  const issues = [];
+  for (const r of WRONG) {
+    if (r.re.test(t)) {
+      const m = (t.match(r.re)||[""])[0];
+      issues.push({ type:"error", said:m, fix:r.fix, ref:r.ref,
+        expl:`«${m}» — не стандартная фразеология ФАП-414. Используйте установленный эквивалент.` });
+    }
+  }
+  for (const w of WARNINGS) {
+    if (w.test(t)) issues.push({ type:"warning", said:t, fix:w.fix, ref:w.ref, expl:w.msg });
+  }
+  if (issues.length) {
+    const hasErr = issues.some(i=>i.type==="error");
+    return { status: hasErr?"error":"warning",
+      summary: hasErr ? `Нестандартно: ${issues.filter(i=>i.type==="error").map(i=>i.said).join(", ")}` : issues[0].expl,
+      issues };
+  }
+  if (OK_RE.some(r=>r.test(t))) return { status:"ok", summary:"Соответствует ФАП-414", issues:[] };
+  return { status:"warning", summary:"Фраза не найдена в базе — проверьте вручную",
+    issues:[{ type:"warning", said:t, fix:"Сверьтесь с Типовой фразеологией ФАП-414",
+      ref:"Приложение к ФАП-414", expl:"Фраза не распознана в базе стандартных паттернов." }] };
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let micPerm = "unknown"; // unknown | requesting | granted | denied
+let isListening = false;
+let recognition = null;
+let entries = [];
+let expandedId = null;
+
+// ─── MIC ──────────────────────────────────────────────────────────────────────
+async function requestMic() {
+  micPerm = "requesting";
+  updateMicUI();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    micPerm = "granted";
+  } catch(e) {
+    micPerm = "denied";
+  }
+  updateMicUI();
+}
+
+function revokeMic() {
+  stopListening();
+  micPerm = "unknown";
+  updateMicUI();
+}
+
+function micButtonTap() {
+  if (micPerm !== "granted") { openSettings(); return; }
+  if (isListening) stopListening(); else startListening();
+}
+
+function startListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert("Браузер не поддерживает распознавание речи"); return; }
+  const r = new SR();
+  r.continuous = true; r.interimResults = true; r.lang = "ru-RU";
+  r.onstart = () => { isListening = true; updateBottomUI(); };
+  r.onresult = (e) => {
+    let interim = "", final = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      e.results[i].isFinal ? (final += t) : (interim += t);
+    }
+    setLive(interim);
+    if (final.trim().length > 2) { addEntry(final.trim()); setLive(""); }
+  };
+  r.onerror = (e) => {
+    if (e.error === "not-allowed") { micPerm = "denied"; isListening = false; updateMicUI(); updateBottomUI(); }
+  };
+  r.onend = () => { if (recognition === r) { try { r.start(); } catch {} } };
+  recognition = r;
+  try { r.start(); } catch(e) { console.warn(e); }
+}
+
+function stopListening() {
+  isListening = false;
+  setLive("");
+  if (recognition) { recognition.onend = null; try { recognition.stop(); } catch {} recognition = null; }
+  updateBottomUI();
+}
+
+// ─── ENTRIES ──────────────────────────────────────────────────────────────────
+function addEntry(phrase) {
+  const result = analyse(phrase);
+  const id = Date.now() + Math.random();
+  const time = new Date().toLocaleTimeString("ru-RU", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  entries.push({ id, phrase, result, time });
+  renderEntry({ id, phrase, result, time });
+  updateStats();
+  hideEmpty();
+  scrollToBottom();
+}
+
+function renderEntry({ id, phrase, result, time }) {
+  const cfg = statusCfg(result.status);
+  const hasDetail = result.issues && result.issues.length > 0;
+
+  const card = document.createElement("div");
+  card.className = "entry" + (hasDetail ? " has-detail" : "");
+  card.dataset.id = id;
+  if (hasDetail) card.onclick = () => toggleExpand(id);
+
+  const summary = result.status !== "ok" && result.summary
+    ? `<div class="entry-summary">${esc(result.summary)}</div>` : "";
+
+  let detailHTML = "";
+  if (hasDetail) {
+    const issuesHTML = result.issues.map(issue => {
+      const ic = issue.type === "error"
+        ? { border: "var(--red-border)", refBg:"var(--red-bg)", refColor:"var(--red)", saidBg:"var(--red-bg)", saidColor:"var(--red)", fixBg:"var(--green-bg)", fixColor:"#1A7F37" }
+        : { border: "var(--yellow-border)", refBg:"var(--yellow-bg)", refColor:"var(--yellow)", saidBg:"var(--red-bg)", saidColor:"var(--red)", fixBg:"var(--green-bg)", fixColor:"#1A7F37" };
+      return `<div class="issue-card" style="border-color:${ic.border}">
+        <div class="issue-ref" style="background:${ic.refBg};color:${ic.refColor}">${esc(issue.ref)}</div>
+        <div class="issue-rows">
+          <div class="issue-row">
+            <span class="issue-icon" style="color:var(--red)">✗</span>
+            <span class="issue-text" style="background:${ic.saidBg};color:${ic.saidColor}">${esc(issue.said)}</span>
+          </div>
+          <div class="issue-row">
+            <span class="issue-icon" style="color:var(--green)">✓</span>
+            <span class="issue-text" style="background:${ic.fixBg};color:${ic.fixColor}">${esc(issue.fix)}</span>
+          </div>
+        </div>
+        <div class="issue-expl">${esc(issue.expl)}</div>
+      </div>`;
+    }).join("");
+    detailHTML = `<div class="entry-detail" id="detail-${id}">${issuesHTML}</div>`;
+  }
+
+  card.innerHTML = `
+    <div class="entry-main">
+      <div class="entry-dot" style="background:${cfg.dot}"></div>
+      <div class="entry-body">
+        <div class="entry-phrase">${esc(phrase)}</div>
+        ${summary}
+      </div>
+      <div class="entry-meta">
+        <div class="entry-badge" style="color:${cfg.color};background:${cfg.bg};border-color:${cfg.border}">${cfg.label}</div>
+        <div class="entry-time">${time}</div>
+      </div>
+    </div>
+    ${detailHTML}`;
+
+  const feed = document.getElementById("feed");
+  const live = document.getElementById("live");
+  feed.insertBefore(card, live);
+}
+
+function toggleExpand(id) {
+  if (expandedId === id) {
+    document.getElementById("detail-" + id)?.classList.remove("open");
+    document.querySelector(`[data-id="${id}"]`)?.style.setProperty("border-color","transparent");
+    expandedId = null;
+  } else {
+    if (expandedId) {
+      document.getElementById("detail-" + expandedId)?.classList.remove("open");
+      document.querySelector(`[data-id="${expandedId}"]`)?.style.setProperty("border-color","transparent");
+    }
+    const detail = document.getElementById("detail-" + id);
+    const card = document.querySelector(`[data-id="${id}"]`);
+    if (detail) {
+      detail.classList.add("open");
+      const cfg = statusCfg(entries.find(e=>e.id===id)?.result?.status);
+      card?.style.setProperty("border-color", cfg.border);
+    }
+    expandedId = id;
+  }
+}
+
+function clearAll() {
+  entries = []; expandedId = null;
+  const feed = document.getElementById("feed");
+  Array.from(feed.querySelectorAll(".entry")).forEach(el => el.remove());
+  updateStats(); showEmpty();
+  document.getElementById("btn-reset").style.display = "none";
+}
+
+function hideEmpty() { document.getElementById("empty").style.display = "none"; document.getElementById("btn-reset").style.display = ""; }
+function showEmpty() { document.getElementById("empty").style.display = ""; }
+function setLive(text) {
+  const el = document.getElementById("live");
+  const tx = document.getElementById("live-text");
+  tx.textContent = text;
+  el.className = text ? "visible" : "";
+}
+function scrollToBottom() { setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 50); }
+
+function updateStats() {
+  let ok=0, warn=0, err=0;
+  entries.forEach(e => {
+    if (e.result.status === "ok") ok++;
+    else if (e.result.status === "warning") warn++;
+    else if (e.result.status === "error") err++;
+  });
+  const total = ok+warn+err;
+  document.getElementById("s-ok").textContent = ok;
+  document.getElementById("s-warn").textContent = warn;
+  document.getElementById("s-err").textContent = err;
+  const statsEl = document.getElementById("stats");
+  statsEl.className = total > 0 ? "visible" : "";
+  const accCard = document.getElementById("s-acc-card");
+  if (total > 0) {
+    const pct = Math.round(ok/total*100);
+    accCard.style.display = "";
+    const accEl = document.getElementById("s-acc");
+    accEl.textContent = pct + "%";
+    accEl.style.color = pct>=80?"var(--green)":pct>=60?"var(--yellow)":"var(--red)";
+    accCard.style.background = pct>=80?"var(--green-bg)":pct>=60?"var(--yellow-bg)":"var(--red-bg)";
+  } else { accCard.style.display = "none"; }
+}
+
+// ─── SETTINGS UI ──────────────────────────────────────────────────────────────
+function openSettings() { document.getElementById("overlay").className = "open"; updateMicUI(); }
+function closeSettings() { document.getElementById("overlay").className = ""; }
+function overlayTap(e) { if (e.target === document.getElementById("overlay")) closeSettings(); }
+
+const MIC_CFG = {
+  unknown:    { icon:"🎙️", label:"Не запрошен",    desc:"Разрешение ещё не запрошено",         bg:"var(--gray-bg)",   color:"var(--gray)" },
+  requesting: { icon:"⏳", label:"Запрашиваю…",    desc:"Подождите, отправляю запрос",          bg:"var(--blue-bg)",   color:"var(--blue)" },
+  granted:    { icon:"✅", label:"Микрофон разрешён", desc:"Приложение может использовать микрофон", bg:"var(--green-bg)", color:"var(--green)" },
+  denied:     { icon:"🚫", label:"Доступ запрещён", desc:"Потребуется разрешить вручную в браузере", bg:"var(--red-bg)", color:"var(--red)" },
+};
+
+function updateMicUI() {
+  const c = MIC_CFG[micPerm];
+  document.getElementById("mic-status-card").style.background = c.bg;
+  document.getElementById("mic-status-icon").textContent = c.icon;
+  document.getElementById("mic-status-label").style.color = c.color;
+  document.getElementById("mic-status-label").textContent = c.label;
+  document.getElementById("mic-status-desc").textContent = c.desc;
+  document.getElementById("btn-allow").style.display = (micPerm==="unknown"||micPerm==="requesting") ? "" : "none";
+  document.getElementById("btn-allow").textContent = micPerm==="requesting" ? "Ожидайте запрос браузера…" : "Разрешить доступ к микрофону";
+  document.getElementById("btn-allow").disabled = micPerm==="requesting";
+  document.getElementById("btn-revoke").style.display = micPerm==="granted" ? "" : "none";
+  document.getElementById("denied-info").style.display = micPerm==="denied" ? "" : "none";
+  updateBottomUI();
+}
+
+function updateBottomUI() {
+  const mic = document.getElementById("btn-mic");
+  const status = document.getElementById("bottom-status");
+  if (micPerm !== "granted") {
+    mic.className = "disabled"; mic.textContent = "🎙️";
+    status.textContent = "Откройте ⚙️ для доступа к микрофону";
+  } else if (isListening) {
+    mic.className = "listening"; mic.textContent = "⏹";
+    status.textContent = "Слушаю — говорите фразеологию";
+  } else {
+    mic.className = ""; mic.textContent = "🎙️";
+    status.textContent = "Нажмите для начала";
+  }
+  const empty = document.getElementById("empty");
+  if (empty.style.display !== "none") {
+    document.getElementById("empty-title").textContent = micPerm==="granted" ? "Готов к работе" : "Требуется микрофон";
+    document.getElementById("empty-sub").textContent = micPerm==="granted"
+      ? "Нажмите кнопку и говорите фразеологию. Каждая фраза анализируется по ФАП-414"
+      : "Откройте настройки ⚙️ и разрешите доступ к микрофону";
+  }
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function esc(s) {
+  if (!s) return "";
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function statusCfg(s) {
+  const m = {
+    ok:      { color:"var(--green)", bg:"var(--green-bg)", border:"var(--green-border)", dot:"var(--green)", label:"Корректно" },
+    warning: { color:"var(--yellow)", bg:"var(--yellow-bg)", border:"var(--yellow-border)", dot:"var(--yellow)", label:"Замечание" },
+    error:   { color:"var(--red)", bg:"var(--red-bg)", border:"var(--red-border)", dot:"var(--red)", label:"Ошибка" },
+    noise:   { color:"var(--gray)", bg:"var(--gray-bg)", border:"var(--gray-border)", dot:"var(--dim)", label:"Шум" },
+  };
+  return m[s] || m.noise;
+}
+
+// Check existing permission
+if (navigator.permissions) {
+  navigator.permissions.query({ name:"microphone" }).then(r => {
+    if (r.state==="granted") micPerm="granted";
+    else if (r.state==="denied") micPerm="denied";
+    updateMicUI();
+    r.onchange = () => {
+      micPerm = r.state==="granted"?"granted":r.state==="denied"?"denied":"unknown";
+      updateMicUI();
+    };
+  }).catch(()=>{});
+}
+</script>
+</body>
+</html>
